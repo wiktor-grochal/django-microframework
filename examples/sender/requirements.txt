@@ -1,0 +1,12 @@
+django
+psycopg2-binary
+uwsgi
+django-debug-toolbar
+django-extensions
+Werkzeug
+django-mptt
+nameko
+pytest
+pytest-cov
+pytest-django
+

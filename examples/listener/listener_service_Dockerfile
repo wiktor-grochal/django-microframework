@@ -1,0 +1,17 @@
+FROM python:3.7-alpine3.8
+RUN mkdir /listener_service
+COPY ./requirements.txt /listener_service
+WORKDIR /listener_service
+
+RUN apk update && \
+ apk add build-base && \
+ apk add --no-cache jpeg libjpeg && \
+ apk add --no-cache jpeg-dev zlib-dev py3-pillow && \
+ apk add postgresql-libs openjpeg openjpeg-dev openjpeg-tools && \
+ apk add --virtual .build-deps gcc musl-dev postgresql-dev linux-headers python3-dev libffi-dev && \
+ python3 -m pip install -r requirements.txt --no-cache-dir && \
+ apk --purge del .build-deps
+
+COPY ./src/listener_service/ /listener_service/
+COPY ./src/listener/ /listener_service/
+CMD ["nameko", "run", "--config", "./listener_service.yaml", "service.service:ListenerService"]

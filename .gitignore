@@ -1,0 +1,9 @@
+.*
+*.iml
+*egg-info/
+!.coveragerc
+!.dockerignore
+!.gitignore
+!.gitlab-ci.yml
+__pycache__/
+doc/_build
