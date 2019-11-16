@@ -13,7 +13,7 @@ setup(
     author_email='wiktor.grochal@gmail.com',
     url='https://github.com/wiktor-grochal/django-microframework',
     license='BSD',
-    packages=find_packages(exclude=['tests']),
+    packages=find_packages(),
     include_package_data=True,
     install_requires=[],
     python_requires=">=3.5",

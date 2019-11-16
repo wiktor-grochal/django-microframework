@@ -14,5 +14,7 @@ RUN apk update && \
 
 COPY ./examples/listener/src/listener/ /listener_service/
 COPY ./ /microframework/
-RUN python /microframework/setup.py install
+WORKDIR /microframework
+RUN python setup.py install
+WORKDIR /listener_service
 CMD ["python3", "manage.py", "run_listener"]
