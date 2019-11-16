@@ -1,7 +1,8 @@
 FROM python:3.7-alpine3.8
 
 RUN mkdir /sender
-COPY ./requirements.txt /sender
+RUN mkdir /microframework
+COPY ./examples/sender/requirements.txt /sender
 WORKDIR /sender
 
 RUN apk update && \
@@ -10,6 +11,8 @@ RUN apk update && \
  python3 -m pip install -r requirements.txt --no-cache-dir && \
  apk --purge del .build-deps
 
-COPY ./ /sender/
+COPY ./examples/sender/ /sender/
+COPY ./ /microframework/
+RUN python /microframework/setup.py install
 WORKDIR /sender/src
 CMD ["python3", "manage.py", "runserver_plus", "[::]:8000"]

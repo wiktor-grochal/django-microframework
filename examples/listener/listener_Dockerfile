@@ -1,7 +1,8 @@
 FROM python:3.7-alpine3.8
 
 RUN mkdir /listener
-COPY ./requirements.txt /listener
+RUN mkdir /microframework
+COPY ./examples/listener/requirements.txt /listener
 WORKDIR /listener
 
 RUN apk update && \
@@ -13,5 +14,7 @@ RUN apk update && \
  python3 -m pip install -r requirements.txt --no-cache-dir && \
  apk --purge del .build-deps
 
-COPY ./src/listener/ /listener/
+COPY ./examples/listener/src/listener/ /listener/
+COPY ./ /microframework/
+RUN python /microframework/setup.py install
 CMD ["python3", "manage.py", "runserver_plus", "--print-sql", "[::]:8000"]
