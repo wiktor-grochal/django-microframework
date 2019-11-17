@@ -1,7 +1,10 @@
-from nameko.events import event_handler
-from .utils import create_model_name_list
 import json
 import logging
+from dateutil.parser import parse
+from django.contrib.contenttypes.models import ContentType
+from nameko.events import event_handler
+from .utils import create_model_name_list
+from .models import SyncData
 
 
 log = logging.getLogger(__name__)
@@ -42,11 +45,21 @@ class DjangoObjectHandler:
                 else:
                     fields_trimmed[field_name] = field_value
 
-        obj, created = model.objects.update_or_create(id=data["object_data"]["pk"],
-                                                      defaults=fields_trimmed)
+        sync_data, created = SyncData.objects.get_or_create(object_id=data["object_data"]["pk"],
+                                                            content_type=ContentType.objects.get_for_model(model),
+                                                            defaults={'date_modified': data["sync_data"]["date_modified"]})
+        if not created:
+            if sync_data.date_modified > parse(data["sync_data"]["date_modified"]):
+                log.warning("Sync data mismatch. Incoming object is older than current object in database")
+                return False
+        model.objects.update_or_create(id=data["object_data"]["pk"],
+                                       defaults=fields_trimmed)
+        sync_data.date_modified = data["sync_data"]["date_modified"]
+        sync_data.save()
 
     def object_deleted_handler(self, payload, model):
         data = json.loads(payload)
+        self.verify_sync(data["sync_data"])
         obj = model.objects.get(id=data["object_data"]["pk"])
         obj.delete()
 

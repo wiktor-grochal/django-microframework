@@ -1,6 +1,7 @@
 from decimal import Decimal
 from nameko.standalone.events import event_dispatcher
 from django.db.models.signals import post_save, post_delete
+import pytz
 from django.core import serializers
 import json
 import datetime
@@ -39,7 +40,8 @@ def create_save_signal_handler(synced_save_model, sender_name, model_name_list):
         object_data = serializers.serialize("python", [instance, ])[0]
         payload = {
             'sync_data': {
-                'models_list': model_name_list
+                'models_list': model_name_list,
+                'date_modified': datetime.datetime.utcnow().replace(tzinfo=pytz.utc)
             },
             'object_data': object_data
         }
