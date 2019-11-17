@@ -11,7 +11,12 @@ class Command(BaseCommand):
     requires_system_checks = False
 
     def handle(self, *args, **options):
-        AMQP_URI = 'pyamqp://guest:guest@172.17.0.5'
+        if not hasattr(settings, 'MICROFRAMEWORK_SERVICE_CLASS'):
+            log.error('You need to define MICROFRAMEWORK_SERVICE_CLASS in django settings')
+            return False
+        if not hasattr(settings, 'MICROFRAMEWORK_AMQP_URI'):
+            log.error('You need to define MICROFRAMEWORK_AMQP_URI in django settings')
+            return False
         parser = argparse.ArgumentParser()
         parser.add_argument(
             'services', nargs='+',
@@ -28,9 +33,6 @@ class Command(BaseCommand):
             help='Specify a port number to host a backdoor, which can be'
                  ' connected to for an interactive interpreter within the running'
                  ' service process using `nameko backdoor`.')
-        if not hasattr(settings, 'MICROFRAMEWORK_SERVICE_CLASS'):
-            log.error('You need to define MICROFRAMEWORK_SERVICE_CLASS in django settings')
-            return False
-        args = parser.parse_args(["--broker", AMQP_URI, "example.service:ListenerService"])
 
+        args = parser.parse_args(["--broker", settings.MICROFRAMEWORK_AMQP_URI, settings.MICROFRAMEWORK_SERVICE_CLASS])
         run.main(args)

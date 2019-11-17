@@ -4,10 +4,16 @@ from django.db.models.signals import post_save, post_delete
 from django.core import serializers
 import json
 import datetime
+import logging
+from django.conf import settings
 
-AMQP_URI = 'pyamqp://guest:guest@172.17.0.5'
+log = logging.getLogger(__name__)
+
+if not hasattr(settings, 'MICROFRAMEWORK_AMQP_URI'):
+    raise Exception('You need to define MICROFRAMEWORK_AMQP_URI in django settings')
+
 AMQP_CONFIG = {
-    'AMQP_URI': AMQP_URI
+    'AMQP_URI': settings.MICROFRAMEWORK_AMQP_URI
 }
 
 dispatch = event_dispatcher(AMQP_CONFIG)

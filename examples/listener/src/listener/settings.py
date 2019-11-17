@@ -151,3 +151,4 @@ if DEBUG:
     }
 
 MICROFRAMEWORK_SERVICE_CLASS = "example.service:ListenerService"
+MICROFRAMEWORK_AMQP_URI = 'pyamqp://guest:guest@172.17.0.5'

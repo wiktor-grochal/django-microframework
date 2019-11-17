@@ -13,6 +13,7 @@ RUN apk update && \
 
 COPY ./examples/sender/ /sender/
 COPY ./ /microframework/
-RUN python /microframework/setup.py install
+WORKDIR /microframework
+RUN python setup.py install
 WORKDIR /sender/src
 CMD ["python3", "manage.py", "runserver_plus", "[::]:8000"]

@@ -157,4 +157,4 @@ if DEBUG and not TEST_RUN:
         "SHOW_TOOLBAR_CALLBACK" : lambda request: True,
     }
 
-PUBLISH_EVENTS = True
+MICROFRAMEWORK_AMQP_URI = 'pyamqp://guest:guest@172.17.0.5'

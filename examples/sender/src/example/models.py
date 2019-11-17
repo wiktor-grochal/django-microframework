@@ -1,7 +1,7 @@
 # from django.contrib.postgres.fields import JSONField
 from django.db import models
 # from mptt.models import MPTTModel, TreeForeignKey
-from .events import connect_signals
+from microframework.sender import connect_signals
 
 
 class RegularModel(models.Model):
