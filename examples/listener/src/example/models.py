@@ -1,6 +1,6 @@
-# from django.contrib.postgres.fields import JSONField
+from django.contrib.postgres.fields import JSONField
 from django.db import models
-# from mptt.models import MPTTModel, TreeForeignKey
+from mptt.models import MPTTModel, TreeForeignKey
 
 
 class RegularModel(models.Model):
@@ -26,4 +26,28 @@ class RegularModel(models.Model):
     url = models.URLField(null=True)
     uuid = models.UUIDField(null=True)
 
+    def __str__(self):
+        return self.char
 
+
+class JSONModel(models.Model):
+    json = JSONField()
+
+    def __str__(self):
+        return self.json
+
+
+class TreeModel(MPTTModel):
+    name = models.CharField(max_length=255, null=True)
+    parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
+
+    def __str__(self):
+        return self.name
+
+
+class ForeignKeyModel(models.Model):
+    foreign_key = models.ForeignKey(RegularModel, on_delete=models.CASCADE)
+    tree = TreeForeignKey(TreeModel, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f'{str(self.foreign_key)}:{str(self.tree)}'
