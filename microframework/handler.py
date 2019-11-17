@@ -1,4 +1,5 @@
 from nameko.events import event_handler
+from .utils import create_model_name_list
 import json
 import logging
 
@@ -11,15 +12,25 @@ class HandlerException(Exception):
 
 
 class DjangoObjectHandler:
+    synced_save_models = []
+
     def get_field_by_name(self, name, model_meta_fields):
         for field in model_meta_fields:
             if field.name == name:
                 return field
         return None
 
+    def verify_sync(self, sync_data):
+        sender_models_list = sync_data['models_list']
+        listener_models_list = create_model_name_list(self.synced_save_models)
+        if not set(sender_models_list) == set(listener_models_list):
+            log.warning(f"Sender and listener models list are not the same. "
+                        f"Sender:{str(sender_models_list)} Listener: {str(listener_models_list)}")
+
     def object_saved_handler(self, payload, model):
         data = json.loads(payload)
-        fields = data["fields"]
+        self.verify_sync(data["sync_data"])
+        fields = data["object_data"]["fields"]
         fields_trimmed = {}
 
         for field_name, field_value in fields.items():
@@ -31,12 +42,12 @@ class DjangoObjectHandler:
                 else:
                     fields_trimmed[field_name] = field_value
 
-        obj, created = model.objects.update_or_create(id=data["pk"],
+        obj, created = model.objects.update_or_create(id=data["object_data"]["pk"],
                                                       defaults=fields_trimmed)
 
     def object_deleted_handler(self, payload, model):
         data = json.loads(payload)
-        obj = model.objects.get(id=data["pk"])
+        obj = model.objects.get(id=data["object_data"]["pk"])
         obj.delete()
 
 

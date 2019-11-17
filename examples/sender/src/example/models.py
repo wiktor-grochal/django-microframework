@@ -35,7 +35,7 @@ class JSONModel(models.Model):
     json = JSONField()
 
     def __str__(self):
-        return self.json
+        return repr(self.json)
 
 
 class TreeModel(MPTTModel):
