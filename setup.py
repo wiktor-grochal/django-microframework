@@ -6,7 +6,8 @@ from setuptools import find_packages, setup
 setup(
     name='django-microframework',
     description=(
-        'Syncs models between django instances'
+        'Django microframework allows you for easy synchronization '
+        'of database entities between multiple django instances.'
     ),
     version='0.1.0',
     author='Wiktor Grochal',
