@@ -3,12 +3,18 @@
 from setuptools import find_packages, setup
 
 
+def read(f):
+    return open(f, 'r', encoding='utf-8').read()
+
+
 setup(
     name='django-microframework',
     description=(
         'Django microframework allows you for easy synchronization '
         'of database entities between multiple django instances.'
     ),
+    long_description=read('README.md'),
+    long_description_content_type='text/markdown',
     version='0.1.0',
     author='Wiktor Grochal',
     author_email='wiktor.grochal@gmail.com',
