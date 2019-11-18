@@ -9,6 +9,7 @@ Django microframework allows you for easy synchronization of database entities b
 
 # Installation
     pip install django-microframework
+    python manage.py migrate
 
 # Usage
 ### Sender
