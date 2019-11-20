@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites',
     'mptt',
+    'microframework',
     'example',
     'debug_toolbar',
     'django_extensions',
@@ -159,3 +160,4 @@ if DEBUG and not TEST_RUN:
     }
 
 MICROFRAMEWORK_AMQP_URI = 'pyamqp://guest:guest@172.17.0.5'
+MICROFRAMEWORK_SENDER_NAME = 'example_sender'

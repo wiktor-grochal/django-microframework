@@ -54,4 +54,12 @@ class ForeignKeyModel(models.Model):
         return f'{str(self.foreign_key)}:{str(self.tree)}'
 
 
-connect_signals([RegularModel, JSONModel, TreeModel, ForeignKeyModel], 'example_sender')
+class SecondForeignKeyModel(models.Model):
+    foreign_key_2 = models.ForeignKey(ForeignKeyModel, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255, null=True)
+
+    def __str__(self):
+        return self.name
+
+
+connect_signals([RegularModel, JSONModel, TreeModel, ForeignKeyModel, SecondForeignKeyModel], 'example_sender')

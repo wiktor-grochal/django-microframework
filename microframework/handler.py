@@ -3,7 +3,7 @@ import logging
 from dateutil.parser import parse
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
-from nameko.events import event_handler
+from nameko.events import BROADCAST, EventHandler
 from .utils import create_model_name_list
 from .models import SyncData
 
@@ -76,24 +76,34 @@ class NamekoHandlerMeta(type):
             synced_save_models = dct['synced_save_models']
         except KeyError:
             raise HandlerException('Service class must define a `synced_save_models` attribute')
+        try:
+            service_name = dct['name']
+        except KeyError:
+            raise HandlerException('Service class must define a `name` attribute')
+
+        class BroadcastEventHandler(EventHandler):
+            broadcast_identifier = service_name
+
+        event_handler = BroadcastEventHandler.decorator
+
         for synced_save_model in synced_save_models:
             saved_method_name = f'{synced_save_model.__name__}_saved'
             deleted_method_name = f'{synced_save_model.__name__}_deleted'
-            setattr(x, saved_method_name, mcs.create_saved_nameko_handler(sender_name, synced_save_model))
-            setattr(x, deleted_method_name, mcs.create_deleted_nameko_handler(sender_name, synced_save_model))
+            setattr(x, saved_method_name, mcs.create_saved_nameko_handler(sender_name, synced_save_model, event_handler))
+            setattr(x, deleted_method_name, mcs.create_deleted_nameko_handler(sender_name, synced_save_model, event_handler))
         return x
 
     @classmethod
-    def create_saved_nameko_handler(mcs, sender_name, model):
-        @event_handler(sender_name, f'{model.__name__}_saved')
+    def create_saved_nameko_handler(mcs, sender_name, model, event_handler):
+        @event_handler(sender_name, f'{model.__name__}_saved', handler_type=BROADCAST, requeue_on_error=True)
         def handler(self, payload):
             self.object_saved_handler(payload, model)
             log.info(f'{model.__name__}_saved')
         return handler
 
     @classmethod
-    def create_deleted_nameko_handler(mcs, sender_name, model):
-        @event_handler(sender_name, f'{model.__name__}_deleted')
+    def create_deleted_nameko_handler(mcs, sender_name, model, event_handler):
+        @event_handler(sender_name, f'{model.__name__}_deleted', handler_type=BROADCAST, requeue_on_error=True)
         def handler(self, payload):
             self.object_deleted_handler(payload, model)
             log.info(f'{model.__name__}_deleted')

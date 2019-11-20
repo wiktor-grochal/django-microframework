@@ -21,7 +21,14 @@ connect_signals([RegularModel, JSONModel, TreeModel, ForeignKeyModel], 'example_
 In your settings.py:
 ```python
 MICROFRAMEWORK_AMQP_URI = 'pyamqp://guest:guest@172.17.0.5'
+MICROFRAMEWORK_SENDER_NAME = 'example_sender'
 ```
+To use sync_data command add `'microframework'` to your `INSTALLED_APPS` setting.
+
+    INSTALLED_APPS = [
+        ...
+        'microframework',
+    ]
 
 ### Listener
 Create service.py file:

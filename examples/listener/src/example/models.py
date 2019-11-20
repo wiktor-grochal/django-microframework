@@ -51,3 +51,11 @@ class ForeignKeyModel(models.Model):
 
     def __str__(self):
         return f'{str(self.foreign_key)}:{str(self.tree)}'
+
+
+class SecondForeignKeyModel(models.Model):
+    foreign_key_2 = models.ForeignKey(ForeignKeyModel, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255, null=True)
+
+    def __str__(self):
+        return self.name
