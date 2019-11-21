@@ -64,7 +64,12 @@ def create_delete_signal_handler(synced_save_model, sender_name, model_name_list
     return handler
 
 
-def connect_signals(models, sender_name):
+def connect_signals(models, sender_name=None):
+    if not sender_name:
+        if not hasattr(settings, 'MICROFRAMEWORK_SENDER_NAME'):
+            raise Exception('You need to define MICROFRAMEWORK_SENDER_NAME in django settings')
+        sender_name = settings.MICROFRAMEWORK_SENDER_NAME
+
     model_name_list = create_model_name_list(models)
     for synced_save_model in models:
         save_signal_handler = create_save_signal_handler(synced_save_model, sender_name, model_name_list)

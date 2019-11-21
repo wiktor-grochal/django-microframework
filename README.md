@@ -10,6 +10,12 @@ Django microframework allows you for easy synchronization of database entities b
 # Installation
     pip install django-microframework
     python manage.py migrate
+Add `'microframework'` to your `INSTALLED_APPS` setting.
+
+    INSTALLED_APPS = [
+        ...
+        'microframework',
+    ]
 
 # Usage
 ### Sender
@@ -23,13 +29,6 @@ In your settings.py:
 MICROFRAMEWORK_AMQP_URI = 'pyamqp://guest:guest@172.17.0.5'
 MICROFRAMEWORK_SENDER_NAME = 'example_sender'
 ```
-To use sync_data command add `'microframework'` to your `INSTALLED_APPS` setting.
-
-    INSTALLED_APPS = [
-        ...
-        'microframework',
-    ]
-
 ### Listener
 Create service.py file:
 ```python
@@ -48,15 +47,13 @@ MICROFRAMEWORK_SERVICE_CLASS = "example.service:ListenerService"
 MICROFRAMEWORK_AMQP_URI = 'pyamqp://guest:guest@172.17.0.5'
 ```
 
-And add `'microframework'` to your `INSTALLED_APPS` setting.
-
-    INSTALLED_APPS = [
-        ...
-        'microframework',
-    ]
 In your manage.py - this needs to be put before anything else in your code:
 ```python
 import eventlet
 eventlet.monkey_patch()
+```
+In order to run listener service:
+```
+python manage.py run_listener
 ```
 

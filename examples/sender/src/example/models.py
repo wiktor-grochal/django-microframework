@@ -62,4 +62,4 @@ class SecondForeignKeyModel(models.Model):
         return self.name
 
 
-connect_signals([RegularModel, JSONModel, TreeModel, ForeignKeyModel, SecondForeignKeyModel], 'example_sender')
+connect_signals([RegularModel, JSONModel, TreeModel, ForeignKeyModel, SecondForeignKeyModel])
