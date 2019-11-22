@@ -3,9 +3,10 @@ import logging
 from dateutil.parser import parse
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
+from django.db.utils import IntegrityError
 from nameko.events import BROADCAST, EventHandler
-from .utils import create_model_name_list
-from .models import SyncData
+from .utils import create_model_name_list, transform_serialized_foreign_fields
+from .models import SyncData, PendingObjects
 
 
 log = logging.getLogger(__name__)
@@ -18,49 +19,70 @@ class HandlerException(Exception):
 class DjangoObjectHandler:
     synced_save_models = []
 
-    def get_field_by_name(self, name, model_meta_fields):
-        for field in model_meta_fields:
-            if field.name == name:
-                return field
-        return None
+    @staticmethod
+    def save_object(data, model):
+        fields = data["object_data"]["fields"]
+        fields_transformed = transform_serialized_foreign_fields(fields, model)
+        sync_data, created = SyncData.objects.get_or_create(object_id=data["object_data"]["pk"],
+                                                            content_type=ContentType.objects.get_for_model(model),
+                                                            defaults={'date_modified': data["sync_data"]["date_modified"]})
+        if not created:
+            if sync_data.date_modified > parse(data["sync_data"]["date_modified"]):
+                log.warning("Sync data mismatch. Incoming object is older than current object in database")
+                return False
+        model.objects.update_or_create(id=data["object_data"]["pk"],
+                                       defaults=fields_transformed)
+        sync_data.date_modified = data["sync_data"]["date_modified"]
+        sync_data.save()
 
-    def verify_sync(self, sync_data):
+    @classmethod
+    def save_pending_objects(cls, data, model):
+        pending_objects = PendingObjects.objects.filter(object_id=data["object_data"]["pk"],
+                                                        content_type=ContentType.objects.get_for_model(model))
+        for pending_object in pending_objects:
+            data = json.loads(pending_object.object_serialized)
+            model = pending_object.content_type.model_class()
+            cls.save_object(data, model)
+            pending_object.delete()
+
+    @staticmethod
+    def create_pending_objects(data, model):
+        model_fields = model._meta.get_fields()
+        payload = json.dumps(data)
+        for model_field in model_fields:
+            if model_field.__class__.__name__ in ['ForeignKey', 'TreeForeignKey']:
+                object_id = data["object_data"]["fields"][model_field.name]
+                content_type = ContentType.objects.get_for_model(model_field.related_model)
+                PendingObjects.objects.create(
+                    object_id=object_id,
+                    content_type=content_type,
+                    object_serialized=payload
+                )
+
+    @classmethod
+    def verify_sync(cls, data):
+        sync_data = data['sync_data']
         sender_models_list = sync_data['models_list']
-        listener_models_list = create_model_name_list(self.synced_save_models)
+        listener_models_list = create_model_name_list(cls.synced_save_models)
         if not set(sender_models_list) == set(listener_models_list):
             log.warning(f"Sender and listener models list are not the same. "
                         f"Sender:{str(sender_models_list)} Listener: {str(listener_models_list)}")
 
-    def object_saved_handler(self, payload, model):
+    @classmethod
+    def object_saved_handler(cls, payload, model):
         data = json.loads(payload)
-        self.verify_sync(data["sync_data"])
-        fields = data["object_data"]["fields"]
-        fields_trimmed = {}
+        cls.verify_sync(data)
+        try:
+            with transaction.atomic():
+                cls.save_object(data, model)
+                cls.save_pending_objects(data, model)
+        except IntegrityError:
+            cls.create_pending_objects(data, model)
 
-        for field_name, field_value in fields.items():
-            field = self.get_field_by_name(field_name, model._meta.fields)
-            if field:
-                field_type = field.get_internal_type()
-                if field_type in ['ForeignKey', 'TreeForeignKey']:
-                    fields_trimmed[f'{field_name}_id'] = field_value
-                else:
-                    fields_trimmed[field_name] = field_value
-        with transaction.atomic():
-            sync_data, created = SyncData.objects.get_or_create(object_id=data["object_data"]["pk"],
-                                                                content_type=ContentType.objects.get_for_model(model),
-                                                                defaults={'date_modified': data["sync_data"]["date_modified"]})
-            if not created:
-                if sync_data.date_modified > parse(data["sync_data"]["date_modified"]):
-                    log.warning("Sync data mismatch. Incoming object is older than current object in database")
-                    return False
-            model.objects.update_or_create(id=data["object_data"]["pk"],
-                                           defaults=fields_trimmed)
-            sync_data.date_modified = data["sync_data"]["date_modified"]
-            sync_data.save()
-
-    def object_deleted_handler(self, payload, model):
+    @classmethod
+    def object_deleted_handler(cls, payload, model):
         data = json.loads(payload)
-        self.verify_sync(data["sync_data"])
+        cls.verify_sync(data)
         obj = model.objects.get(id=data["object_data"]["pk"])
         obj.delete()
 
