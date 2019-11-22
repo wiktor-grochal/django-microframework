@@ -22,6 +22,15 @@ def _model_has_rel_to(model, sorted_models):
                 return True
     return False
 
+def get_model_relations(model, sorted_models):
+    model_fields = model._meta.get_fields()
+    for model_field in model_fields:
+        if model_field.__class__.__name__ in ['ForeignKey', 'TreeForeignKey']:
+            related_model = model_field.related_model
+            if related_model in sorted_models:
+                return True
+    return False
+
 
 def sort_models_by_relations(models, sorted_models=None):
     if not models:

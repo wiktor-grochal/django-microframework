@@ -3,9 +3,10 @@ import logging
 from dateutil.parser import parse
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
+from django.db.utils import IntegrityError
 from nameko.events import BROADCAST, EventHandler
 from .utils import create_model_name_list
-from .models import SyncData
+from .models import SyncData, PendingObjects
 
 
 log = logging.getLogger(__name__)
@@ -45,18 +46,37 @@ class DjangoObjectHandler:
                     fields_trimmed[f'{field_name}_id'] = field_value
                 else:
                     fields_trimmed[field_name] = field_value
-        with transaction.atomic():
-            sync_data, created = SyncData.objects.get_or_create(object_id=data["object_data"]["pk"],
-                                                                content_type=ContentType.objects.get_for_model(model),
-                                                                defaults={'date_modified': data["sync_data"]["date_modified"]})
-            if not created:
-                if sync_data.date_modified > parse(data["sync_data"]["date_modified"]):
-                    log.warning("Sync data mismatch. Incoming object is older than current object in database")
-                    return False
-            model.objects.update_or_create(id=data["object_data"]["pk"],
-                                           defaults=fields_trimmed)
-            sync_data.date_modified = data["sync_data"]["date_modified"]
-            sync_data.save()
+        try:
+            with transaction.atomic():
+                sync_data, created = SyncData.objects.get_or_create(object_id=data["object_data"]["pk"],
+                                                                    content_type=ContentType.objects.get_for_model(model),
+                                                                    defaults={'date_modified': data["sync_data"]["date_modified"]})
+                if not created:
+                    if sync_data.date_modified > parse(data["sync_data"]["date_modified"]):
+                        log.warning("Sync data mismatch. Incoming object is older than current object in database")
+                        return False
+                model.objects.update_or_create(id=data["object_data"]["pk"],
+                                               defaults=fields_trimmed)
+                sync_data.date_modified = data["sync_data"]["date_modified"]
+                sync_data.save()
+                pending_objects = PendingObjects.objects.filter(object_id=data["object_data"]["pk"],
+                                                                content_type=ContentType.objects.get_for_model(model))
+                for pending_object in pending_objects:
+                    pending_object.save_object()
+
+        except IntegrityError:
+            model_fields = model._meta.get_fields()
+            print(data)
+            for model_field in model_fields:
+                print(model_field.name)
+                if model_field.__class__.__name__ in ['ForeignKey', 'TreeForeignKey']:
+                    object_id = data["object_data"]["fields"][model_field.name]
+                    content_type = ContentType.objects.get_for_model(model_field.related_model)
+                    PendingObjects.objects.create(
+                        object_id=object_id,
+                        content_type=content_type,
+                        object_serialized=payload
+                    )
 
     def object_deleted_handler(self, payload, model):
         data = json.loads(payload)
