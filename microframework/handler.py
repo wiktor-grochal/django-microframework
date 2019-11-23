@@ -40,9 +40,9 @@ class DjangoObjectHandler:
         pending_objects = PendingObjects.objects.filter(object_id=data["object_data"]["pk"],
                                                         content_type=ContentType.objects.get_for_model(model))
         for pending_object in pending_objects:
-            data = json.loads(pending_object.object_serialized)
+            pending_data = json.loads(pending_object.object_serialized)
             model = pending_object.content_type.model_class()
-            cls.save_object(data, model)
+            cls.save_object(pending_data, model)
             pending_object.delete()
 
     @staticmethod
