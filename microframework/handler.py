@@ -83,8 +83,13 @@ class DjangoObjectHandler:
     def object_deleted_handler(cls, payload, model):
         data = json.loads(payload)
         cls.verify_sync(data)
-        obj = model.objects.get(id=data["object_data"]["pk"])
-        obj.delete()
+        with transaction.atomic():
+            obj = model.objects.get(id=data["object_data"]["pk"])
+            obj.delete()
+            pending_objects = PendingObjects.objects.filter(object_id=data["object_data"]["pk"],
+                                                            content_type=ContentType.objects.get_for_model(model))
+            for pending_object in pending_objects:
+                pending_object.delete()
 
 
 class NamekoHandlerMeta(type):
