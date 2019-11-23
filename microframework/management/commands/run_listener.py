@@ -1,14 +1,44 @@
 from nameko.cli import run
 import argparse
 import logging
+import json
 from django.core.management.base import BaseCommand
+from django.db.utils import IntegrityError
 from django.conf import settings
+from multiprocessing import Process
+from microframework.handler import DjangoObjectHandler
+from microframework.models import PendingObjects
+from time import sleep
 
 log = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
     requires_system_checks = False
+
+    @staticmethod
+    def sync_pending():
+        """
+        Sync left over pending objects in rare cases when two dependant messages
+        are processed exactly at the same time and save_pending_objects gets executed
+        before create_pending_objects inserts objects to DB.
+        This could be also solved by locking entire PendingObjects table,
+        but it looks like a much less elegant solution.
+        """
+        while True:
+            try:
+                pending_objects = PendingObjects.objects.all()
+                for pending_object in pending_objects:
+                    try:
+                        pending_data = json.loads(pending_object.object_serialized)
+                        model = pending_object.content_type.model_class()
+                        DjangoObjectHandler.save_object(pending_data, model)
+                        pending_object.delete()
+                    except IntegrityError:
+                        pass
+            except Exception as e:
+                log.error(e)
+            sleep(getattr(settings, 'MICROFRAMEWORK_SYNC_PENDING_INTERVAL', 10))
 
     def handle(self, *args, **options):
         if not hasattr(settings, 'MICROFRAMEWORK_SERVICE_CLASS'):
@@ -35,4 +65,6 @@ class Command(BaseCommand):
                  ' service process using `nameko backdoor`.')
 
         args = parser.parse_args(["--broker", settings.MICROFRAMEWORK_AMQP_URI, settings.MICROFRAMEWORK_SERVICE_CLASS])
+        p = Process(target=self.sync_pending)
+        p.start()
         run.main(args)
