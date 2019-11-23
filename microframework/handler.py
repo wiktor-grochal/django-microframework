@@ -7,9 +7,11 @@ from django.db.utils import IntegrityError
 from nameko.events import BROADCAST, EventHandler
 from .utils import create_model_name_list, transform_serialized_foreign_fields
 from .models import SyncData, PendingObjects
+from django.conf import settings
 
 
 log = logging.getLogger(__name__)
+log.setLevel(getattr(settings, 'DJANGO_LOG_LEVEL', 'INFO'))
 
 
 class HandlerException(Exception):
@@ -39,16 +41,21 @@ class DjangoObjectHandler:
     def save_pending_objects(cls, data, model):
         pending_objects = PendingObjects.objects.filter(object_id=data["object_data"]["pk"],
                                                         content_type=ContentType.objects.get_for_model(model))
+        saved = 0
         for pending_object in pending_objects:
             pending_data = json.loads(pending_object.object_serialized)
             model = pending_object.content_type.model_class()
             cls.save_object(pending_data, model)
             pending_object.delete()
+            saved += 1
+        if saved:
+            log.info(f'{saved} PendingObjects saved')
 
     @staticmethod
     def create_pending_objects(data, model):
         model_fields = model._meta.get_fields()
         payload = json.dumps(data)
+        created = 0
         for model_field in model_fields:
             if model_field.__class__.__name__ in ['ForeignKey', 'TreeForeignKey']:
                 object_id = data["object_data"]["fields"][model_field.name]
@@ -58,6 +65,9 @@ class DjangoObjectHandler:
                     content_type=content_type,
                     object_serialized=payload
                 )
+                created += 1
+        if created:
+            log.info(f'{created} PendingObjects created')
 
     @classmethod
     def verify_sync(cls, data):
@@ -70,6 +80,7 @@ class DjangoObjectHandler:
 
     @classmethod
     def object_saved_handler(cls, payload, model):
+        log.debug(f'Incoming data: {payload}')
         data = json.loads(payload)
         cls.verify_sync(data)
         try:
@@ -81,6 +92,7 @@ class DjangoObjectHandler:
 
     @classmethod
     def object_deleted_handler(cls, payload, model):
+        log.debug(f'Incoming data: {payload}')
         data = json.loads(payload)
         cls.verify_sync(data)
         with transaction.atomic():

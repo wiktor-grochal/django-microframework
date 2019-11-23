@@ -11,6 +11,7 @@ from microframework.models import PendingObjects
 from time import sleep
 
 log = logging.getLogger(__name__)
+log.setLevel(getattr(settings, 'DJANGO_LOG_LEVEL', 'INFO'))
 
 
 class Command(BaseCommand):
