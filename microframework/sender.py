@@ -38,6 +38,12 @@ encoder = DateTimeDecimalEncoder()
 def create_save_signal_handler(synced_save_model, sender_name, model_name_list):
     def handler(sender, instance, created, **kwargs):
         object_data = serializers.serialize("python", [instance, ])[0]
+
+        attrdict = instance.__class__.__dict__
+        for attr in attrdict:
+            if isinstance(attrdict[attr], property):
+                object_data['fields'][attr] = getattr(instance, attr)
+
         payload = {
             'sync_data': {
                 'models_list': model_name_list,

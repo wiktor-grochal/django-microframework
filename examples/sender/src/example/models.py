@@ -45,6 +45,10 @@ class TreeModel(MPTTModel):
     def __str__(self):
         return self.name
 
+    @property
+    def parent_name(self):
+        return self.parent.name
+
 
 class ForeignKeyModel(models.Model):
     foreign_key = models.ForeignKey(RegularModel, on_delete=models.CASCADE)

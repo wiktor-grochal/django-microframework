@@ -39,6 +39,7 @@ class JSONModel(models.Model):
 
 class TreeModel(MPTTModel):
     name = models.CharField(max_length=255, null=True)
+    parent_name = models.CharField(max_length=255, null=True, blank=True)
     parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
 
     def __str__(self):
