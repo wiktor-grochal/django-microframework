@@ -1,14 +1,14 @@
-from nameko.cli import run
 import argparse
 import logging
 import json
+from multiprocessing import Process
+from time import sleep
+from nameko.cli import run
 from django.core.management.base import BaseCommand
 from django.db.utils import IntegrityError
 from django.conf import settings
-from multiprocessing import Process
 from microframework.handler import DjangoObjectHandler
 from microframework.models import PendingObjects
-from time import sleep
 
 log = logging.getLogger(__name__)
 log.setLevel(getattr(settings, 'DJANGO_LOG_LEVEL', 'INFO'))

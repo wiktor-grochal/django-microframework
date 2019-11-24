@@ -1,8 +1,8 @@
-from importlib import import_module
-from nameko.standalone.events import event_dispatcher
 import logging
 import pytz
 import datetime
+from importlib import import_module
+from nameko.standalone.events import event_dispatcher
 from django.core.management.base import BaseCommand
 from django.conf import settings
 from django.core import serializers

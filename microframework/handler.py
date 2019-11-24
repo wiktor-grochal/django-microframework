@@ -4,11 +4,11 @@ from dateutil.parser import parse
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.db.utils import IntegrityError
+from django.conf import settings
 from nameko.events import BROADCAST, EventHandler
 from .const import RELATIONAL_FIELDS
 from .utils import create_model_name_list, transform_serialized_foreign_fields
 from .models import SyncData, PendingObjects
-from django.conf import settings
 
 
 log = logging.getLogger(__name__)
