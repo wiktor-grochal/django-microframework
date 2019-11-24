@@ -137,6 +137,11 @@ LOGGING = {
             'handlers': ['console'],
             'level': DJANGO_LOG_LEVEL,
         },
+        'microframework': {
+            'handlers': ['console'],
+            'level': DJANGO_LOG_LEVEL,
+            'propagate': False,
+        },
     }
 }
 
