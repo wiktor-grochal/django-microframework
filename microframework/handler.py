@@ -5,6 +5,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.db.utils import IntegrityError
 from nameko.events import BROADCAST, EventHandler
+from .const import RELATIONAL_FIELDS
 from .utils import create_model_name_list, transform_serialized_foreign_fields
 from .models import SyncData, PendingObjects
 from django.conf import settings
@@ -57,7 +58,7 @@ class DjangoObjectHandler:
         payload = json.dumps(data)
         created = 0
         for model_field in model_fields:
-            if model_field.__class__.__name__ in ['ForeignKey', 'TreeForeignKey']:
+            if model_field.__class__.__name__ in RELATIONAL_FIELDS:
                 object_id = data["object_data"]["fields"][model_field.name]
                 content_type = ContentType.objects.get_for_model(model_field.related_model)
                 PendingObjects.objects.create(

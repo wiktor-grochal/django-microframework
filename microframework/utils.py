@@ -1,3 +1,6 @@
+from .const import RELATIONAL_FIELDS
+
+
 def create_model_name_list(models):
     model_name_list = []
     for model in models:
@@ -8,7 +11,7 @@ def create_model_name_list(models):
 def _model_has_relations(model):
     model_fields = model._meta.get_fields()
     for model_field in model_fields:
-        if model_field.__class__.__name__ in ['ForeignKey', 'TreeForeignKey'] and not model_field.related_model == model:
+        if model_field.__class__.__name__ in RELATIONAL_FIELDS and not model_field.related_model == model:
             return True
     return False
 
@@ -16,7 +19,7 @@ def _model_has_relations(model):
 def _model_has_rel_to(model, sorted_models):
     model_fields = model._meta.get_fields()
     for model_field in model_fields:
-        if model_field.__class__.__name__ in ['ForeignKey', 'TreeForeignKey']:
+        if model_field.__class__.__name__ in RELATIONAL_FIELDS:
             related_model = model_field.related_model
             if related_model in sorted_models:
                 return True
@@ -26,7 +29,7 @@ def _model_has_rel_to(model, sorted_models):
 def get_model_relations(model, sorted_models):
     model_fields = model._meta.get_fields()
     for model_field in model_fields:
-        if model_field.__class__.__name__ in ['ForeignKey', 'TreeForeignKey']:
+        if model_field.__class__.__name__ in RELATIONAL_FIELDS:
             related_model = model_field.related_model
             if related_model in sorted_models:
                 return True
@@ -70,7 +73,7 @@ def transform_serialized_foreign_fields(fields, model):
         field = get_field_by_name(field_name, model)
         if field:
             field_type = field.get_internal_type()
-            if field_type in ['ForeignKey', 'TreeForeignKey']:
+            if field_type in RELATIONAL_FIELDS:
                 fields_transformed[f'{field_name}_id'] = field_value
             else:
                 fields_transformed[field_name] = field_value
