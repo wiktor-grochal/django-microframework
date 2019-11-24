@@ -33,7 +33,7 @@ class DjangoObjectHandler:
             if sync_data.date_modified > parse(data["sync_data"]["date_modified"]):
                 log.warning("Sync data mismatch. Incoming object is older than current object in database")
                 return False
-        model.objects.update_or_create(id=data["object_data"]["pk"],
+        model.objects.update_or_create(pk=data["object_data"]["pk"],
                                        defaults=fields_transformed)
         sync_data.date_modified = data["sync_data"]["date_modified"]
         sync_data.save()
@@ -97,7 +97,7 @@ class DjangoObjectHandler:
         data = json.loads(payload)
         cls.verify_sync(data)
         with transaction.atomic():
-            obj = model.objects.get(id=data["object_data"]["pk"])
+            obj = model.objects.get(pk=data["object_data"]["pk"])
             obj.delete()
             pending_objects = PendingObjects.objects.filter(object_id=data["object_data"]["pk"],
                                                             content_type=ContentType.objects.get_for_model(model))

@@ -1,5 +1,6 @@
 from django.contrib.postgres.fields import JSONField
 from django.db import models
+import uuid
 from mptt.models import MPTTModel, TreeForeignKey
 from microframework.sender import connect_signals
 
@@ -66,4 +67,19 @@ class SecondForeignKeyModel(models.Model):
         return self.name
 
 
-connect_signals([RegularModel, JSONModel, TreeModel, ForeignKeyModel, SecondForeignKeyModel])
+class UuidAsIdModel(models.Model):
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255, null=True)
+
+    def __str__(self):
+        return self.name
+
+
+connect_signals([
+    RegularModel,
+    JSONModel,
+    TreeModel,
+    ForeignKeyModel,
+    SecondForeignKeyModel,
+    UuidAsIdModel
+])

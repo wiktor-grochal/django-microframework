@@ -1,5 +1,6 @@
 from microframework.handler import DjangoObjectHandler, NamekoHandlerMeta
-from example.models import RegularModel, JSONModel, TreeModel, ForeignKeyModel, SecondForeignKeyModel
+from example.models import RegularModel, JSONModel, TreeModel, ForeignKeyModel, SecondForeignKeyModel,\
+    UuidAsIdModel
 
 
 class ListenerService(DjangoObjectHandler, metaclass=NamekoHandlerMeta):
@@ -16,5 +17,12 @@ class ListenerService(DjangoObjectHandler, metaclass=NamekoHandlerMeta):
     """
     name = "listener_service"
     sender_name = "example_sender"
-    synced_save_models = [RegularModel, JSONModel, TreeModel, ForeignKeyModel, SecondForeignKeyModel]
+    synced_save_models = [
+        RegularModel,
+        JSONModel,
+        TreeModel,
+        ForeignKeyModel,
+        SecondForeignKeyModel,
+        UuidAsIdModel
+    ]
 

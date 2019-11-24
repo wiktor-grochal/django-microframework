@@ -1,6 +1,7 @@
 from django.contrib.postgres.fields import JSONField
 from django.db import models
 from mptt.models import MPTTModel, TreeForeignKey
+import uuid
 
 
 class RegularModel(models.Model):
@@ -56,6 +57,14 @@ class ForeignKeyModel(models.Model):
 
 class SecondForeignKeyModel(models.Model):
     foreign_key_2 = models.ForeignKey(ForeignKeyModel, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255, null=True)
+
+    def __str__(self):
+        return self.name
+
+
+class UuidAsIdModel(models.Model):
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255, null=True)
 
     def __str__(self):
