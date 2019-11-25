@@ -42,6 +42,7 @@ class DjangoObjectHandler:
         )
         sync_data.date_modified = data["sync_data"]["date_modified"]
         sync_data.save()
+        log.info(f'{model.__name__} pk:{data["object_data"]["pk"]} saved')
 
     @classmethod
     def save_pending_objects(cls, data, model):
@@ -115,6 +116,7 @@ class DjangoObjectHandler:
             )
             for pending_object in pending_objects:
                 pending_object.delete()
+        log.info(f'{model.__name__} pk:{data["object_data"]["pk"]} deleted')
 
 
 class NamekoHandlerMeta(type):
@@ -165,7 +167,6 @@ class NamekoHandlerMeta(type):
                        requeue_on_error=True)
         def handler(self, payload):
             self.object_saved_handler(payload, model)
-            log.info(f'{model.__name__}_saved')
         return handler
 
     @classmethod
@@ -176,5 +177,4 @@ class NamekoHandlerMeta(type):
                        requeue_on_error=True)
         def handler(self, payload):
             self.object_deleted_handler(payload, model)
-            log.info(f'{model.__name__}_deleted')
         return handler
