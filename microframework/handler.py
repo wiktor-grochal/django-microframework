@@ -26,22 +26,29 @@ class DjangoObjectHandler:
     def save_object(data, model):
         fields = data["object_data"]["fields"]
         fields_transformed = transform_serialized_foreign_fields(fields, model)
-        sync_data, created = SyncData.objects.get_or_create(object_id=data["object_data"]["pk"],
-                                                            content_type=ContentType.objects.get_for_model(model),
-                                                            defaults={'date_modified': data["sync_data"]["date_modified"]})
+        sync_data, created = SyncData.objects.get_or_create(
+            object_id=data["object_data"]["pk"],
+            content_type=ContentType.objects.get_for_model(model),
+            defaults={'date_modified': data["sync_data"]["date_modified"]}
+        )
         if not created:
             if sync_data.date_modified > parse(data["sync_data"]["date_modified"]):
-                log.warning("Sync data mismatch. Incoming object is older than current object in database")
+                log.warning("Sync data mismatch. Incoming object is older "
+                            "than current object in database")
                 return False
-        model.objects.update_or_create(pk=data["object_data"]["pk"],
-                                       defaults=fields_transformed)
+        model.objects.update_or_create(
+            pk=data["object_data"]["pk"],
+            defaults=fields_transformed
+        )
         sync_data.date_modified = data["sync_data"]["date_modified"]
         sync_data.save()
 
     @classmethod
     def save_pending_objects(cls, data, model):
-        pending_objects = PendingObjects.objects.filter(object_id=data["object_data"]["pk"],
-                                                        content_type=ContentType.objects.get_for_model(model))
+        pending_objects = PendingObjects.objects.filter(
+            object_id=data["object_data"]["pk"],
+            content_type=ContentType.objects.get_for_model(model)
+        )
         saved = 0
         for pending_object in pending_objects:
             pending_data = json.loads(pending_object.object_serialized)
@@ -60,7 +67,9 @@ class DjangoObjectHandler:
         for model_field in model_fields:
             if model_field.__class__.__name__ in RELATIONAL_FIELDS:
                 object_id = data["object_data"]["fields"][model_field.name]
-                content_type = ContentType.objects.get_for_model(model_field.related_model)
+                content_type = ContentType.objects.get_for_model(
+                    model_field.related_model
+                )
                 PendingObjects.objects.create(
                     object_id=object_id,
                     content_type=content_type,
@@ -77,7 +86,8 @@ class DjangoObjectHandler:
         listener_models_list = create_model_name_list(cls.synced_save_models)
         if not set(sender_models_list) == set(listener_models_list):
             log.warning(f"Sender and listener models list are not the same. "
-                        f"Sender:{str(sender_models_list)} Listener: {str(listener_models_list)}")
+                        f"Sender:{str(sender_models_list)} "
+                        f"Listener: {str(listener_models_list)}")
 
     @classmethod
     def object_saved_handler(cls, payload, model):
@@ -99,8 +109,10 @@ class DjangoObjectHandler:
         with transaction.atomic():
             obj = model.objects.get(pk=data["object_data"]["pk"])
             obj.delete()
-            pending_objects = PendingObjects.objects.filter(object_id=data["object_data"]["pk"],
-                                                            content_type=ContentType.objects.get_for_model(model))
+            pending_objects = PendingObjects.objects.filter(
+                object_id=data["object_data"]["pk"],
+                content_type=ContentType.objects.get_for_model(model)
+            )
             for pending_object in pending_objects:
                 pending_object.delete()
 
@@ -129,13 +141,28 @@ class NamekoHandlerMeta(type):
         for synced_save_model in synced_save_models:
             saved_method_name = f'{synced_save_model.__name__}_saved'
             deleted_method_name = f'{synced_save_model.__name__}_deleted'
-            setattr(x, saved_method_name, mcs.create_saved_nameko_handler(sender_name, synced_save_model, event_handler))
-            setattr(x, deleted_method_name, mcs.create_deleted_nameko_handler(sender_name, synced_save_model, event_handler))
+            setattr(
+                x,
+                saved_method_name,
+                mcs.create_saved_nameko_handler(
+                    sender_name,
+                    synced_save_model,
+                    event_handler))
+            setattr(
+                x,
+                deleted_method_name,
+                mcs.create_deleted_nameko_handler(
+                    sender_name,
+                    synced_save_model,
+                    event_handler))
         return x
 
     @classmethod
     def create_saved_nameko_handler(mcs, sender_name, model, event_handler):
-        @event_handler(sender_name, f'{model.__name__}_saved', handler_type=BROADCAST, requeue_on_error=True)
+        @event_handler(sender_name,
+                       f'{model.__name__}_saved',
+                       handler_type=BROADCAST,
+                       requeue_on_error=True)
         def handler(self, payload):
             self.object_saved_handler(payload, model)
             log.info(f'{model.__name__}_saved')
@@ -143,7 +170,10 @@ class NamekoHandlerMeta(type):
 
     @classmethod
     def create_deleted_nameko_handler(mcs, sender_name, model, event_handler):
-        @event_handler(sender_name, f'{model.__name__}_deleted', handler_type=BROADCAST, requeue_on_error=True)
+        @event_handler(sender_name,
+                       f'{model.__name__}_deleted',
+                       handler_type=BROADCAST,
+                       requeue_on_error=True)
         def handler(self, payload):
             self.object_deleted_handler(payload, model)
             log.info(f'{model.__name__}_deleted')

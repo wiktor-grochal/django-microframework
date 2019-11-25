@@ -65,7 +65,10 @@ class Command(BaseCommand):
                  ' connected to for an interactive interpreter within the running'
                  ' service process using `nameko backdoor`.')
 
-        args = parser.parse_args(["--broker", settings.MICROFRAMEWORK_AMQP_URI, settings.MICROFRAMEWORK_SERVICE_CLASS])
+        args = parser.parse_args(["--broker",
+                                  settings.MICROFRAMEWORK_AMQP_URI,
+                                  settings.MICROFRAMEWORK_SERVICE_CLASS
+                                  ])
         p = Process(target=self.sync_pending)
         p.start()
         run.main(args)
